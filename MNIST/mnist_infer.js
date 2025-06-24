@@ -5,7 +5,8 @@ ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
         console.log("Loading model…");
         /* ---- 1. load model once ---- */
         const session = await ort.InferenceSession.create(
-            "https://www.mattmarks.io/s/mnist.onnx"
+          "https://cdn.jsdelivr.net/gh/matt-marks/practical_deep_learning_for_coders@main/MNIST/mnist.onnx",
+          { executionProviders: ["wasm"] }
         );
         console.log("Model ready ✅");
         
@@ -37,11 +38,16 @@ ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
             const results = await session.run(feeds);
             const logits  = results.logits.data;          // Float32Array[10]
             console.log("Logits:", logits);
-            
-            // OPTIONAL softmax -> probs 0-100 %
-            const exp = logits.map(Math.exp);
-            const sum = exp.reduce((a, b) => a + b, 0);
-            const percents = exp.map(v => Math.round((v / sum) * 100));
+        
+            /* ---- Numerically-stable soft-max -> 0-100 % ---- */
+            const logitsArr = Array.from(logits);              // Float32Array ➜ normal array
+            const maxLogit  = Math.max(...logitsArr);          // subtract max for stability
+            const exp       = logitsArr.map(l => Math.exp(l - maxLogit));
+            const sum       = exp.reduce((a, b) => a + b, 0);
+            const percents  =
+                (sum > 0 && Number.isFinite(sum))
+                    ? exp.map(v => Math.round((v / sum) * 100))
+                    : Array(10).fill(0);                           // fallback, never NaN
             
             /* update histogram (Chart.js object from global scope) */
             logitChart.data.datasets[0].data = percents;  // or logits
