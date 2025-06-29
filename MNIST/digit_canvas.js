@@ -14,8 +14,8 @@
     
     /* ---- Hi-DPI setup -------------------------- */
     const DPR  = window.devicePixelRatio || 1;
-    const cssW = 300;               // CSS pixels (matches <canvas width>)
-    const cssH = 300;
+    const cssW = 28;               // CSS pixels (matches <canvas width>)
+    const cssH = 28;
     
     canvas.width  = cssW * DPR;
     canvas.height = cssH * DPR;
@@ -25,7 +25,7 @@
     
     /* ---- Drawing style ------------------------- */
     function setDrawingStyle() {
-        ctx.lineWidth   = 18;
+        ctx.lineWidth   = 2;
         ctx.lineCap     = "round";
         ctx.lineJoin    = "round";
         ctx.strokeStyle = "#000";
@@ -43,13 +43,15 @@
     /* ---- Drawing helpers ----------------------- */
     let drawing = false;
     
+    /* Convert client-space coords → 28-px grid */
     function pos(evt) {
-        if (evt.touches) {                         // Touch
-            const r = canvas.getBoundingClientRect();
-            return { x: evt.touches[0].clientX - r.left,
-                y: evt.touches[0].clientY - r.top };
-        }
-        return { x: evt.offsetX, y: evt.offsetY }; // Mouse
+        const r       = canvas.getBoundingClientRect();
+        /* one CSS px = 1 grid unit (28) after we undo the DPR factor */
+        const scaleX  = (canvas.width  / DPR) / r.width;  // (28*DPR)/DPR / 280 = 0.1
+        const scaleY  = (canvas.height / DPR) / r.height;
+        const cx = (evt.touches ? evt.touches[0].clientX : evt.clientX) - r.left;
+        const cy = (evt.touches ? evt.touches[0].clientY : evt.clientY) - r.top;
+        return { x: cx * scaleX, y: cy * scaleY };
     }
     
     function start(evt) {
